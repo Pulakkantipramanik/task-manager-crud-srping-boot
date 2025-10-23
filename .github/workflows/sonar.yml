@@ -25,5 +25,6 @@ jobs:
       run: |
         mvn -B verify sonar:sonar \
           -Dsonar.projectKey=task-manager-crud \
-          -Dsonar.host.url=http://localhost:9000 \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.organization=your_sonarcloud_organization \
           -Dsonar.token=$SONAR_TOKEN
