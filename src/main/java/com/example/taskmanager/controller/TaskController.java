@@ -13,8 +13,7 @@ import java.util.Optional;
 @CrossOrigin(origins = "*")
 public class TaskController {
 
-   
-    private TaskService taskService;
+  
 
     @GetMapping
     public List<Task> getAllTasks() {
