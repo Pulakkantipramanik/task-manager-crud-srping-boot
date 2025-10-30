@@ -64,7 +64,7 @@ jobs:
         run: |
           echo "🚀 Starting SonarQube analysis..."
           mvn -B sonar:sonar \
-            -Dsonar.projectKey=task-manager \
+            -Dsonar.projectKey=task-manager 1 \
             -Dsonar.projectName=task-manager \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
