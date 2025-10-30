@@ -1,30 +1,69 @@
-name: SonarQube Analysis
+name: Build and Analyze Spring Boot Project
+
 on:
   push:
-    branches: [ master ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ master ]
+    branches: [ "main" ]
 
 jobs:
-  sonar:
+  build:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: admin
+          MYSQL_DATABASE: taskmanager_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -padmin"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        
-    - name: Build and analyze
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      run: |
-        mvn -B verify sonar:sonar \
-          -Dsonar.projectKey=task-manager-crud \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.organization=your_sonarcloud_organization \
-          -Dsonar.token=$SONAR_TOKEN
+      # 🧩 Step 1: Checkout the repository
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # ☕ Step 2: Set up Java 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # ⚡ Step 3: Cache Maven dependencies
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # 🏗️ Step 4: Build & Test with Maven
+      - name: Build and Test Project
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/taskmanager_db
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: admin
+        run: mvn clean verify -DskipTests=false
+
+      # 📦 Step 5: Package the Application
+      - name: Package Spring Boot Application
+        run: mvn package -DskipTests
+
+      # 🔍 Step 6: SonarQube Code Analysis
+      - name: SonarQube Code Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: mvn sonar:sonar \
+          -Dsonar.projectKey=task-manager \
+          -Dsonar.projectName=task-manager \
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
