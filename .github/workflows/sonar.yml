@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:  # 🔹 Manual trigger support (GitHub Actions tab থেকে চালানো যাবে)
 
 jobs:
   build:
@@ -25,45 +26,50 @@ jobs:
           --health-retries=5
 
     steps:
-      # 🧩 Step 1: Checkout the repository
-      - name: Checkout source code
+      # 🧩 Step 1: Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       # ☕ Step 2: Set up Java 17
-      - name: Set up JDK 17
+      - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'maven'
 
-      # ⚡ Step 3: Cache Maven dependencies
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
-      # 🏗️ Step 4: Build & Test with Maven
+      # 🏗️ Step 3: Build & Test with Maven
       - name: Build and Test Project
         env:
           SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/taskmanager_db
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: admin
-        run: mvn clean verify -DskipTests=false
+        run: |
+          echo "🔧 Starting Maven build and tests..."
+          mvn -B clean verify
+          echo "✅ Build and tests completed successfully!"
 
-      # 📦 Step 5: Package the Application
+      # 📦 Step 4: Package Spring Boot Application
       - name: Package Spring Boot Application
-        run: mvn package -DskipTests
+        run: |
+          echo "📦 Packaging application..."
+          mvn -B package -DskipTests
+          echo "✅ Packaging complete."
 
-      # 🔍 Step 6: SonarQube Code Analysis
+      # 🔍 Step 5: Run SonarQube Code Analysis
       - name: SonarQube Code Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn sonar:sonar \
-          -Dsonar.projectKey=task-manager \
-          -Dsonar.projectName=task-manager \
-          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+        run: |
+          echo "🚀 Starting SonarQube analysis..."
+          mvn -B sonar:sonar \
+            -Dsonar.projectKey=task-manager \
+            -Dsonar.projectName=task-manager \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          echo "✅ SonarQube analysis completed!"
+
+      # 🧾 Step 6: Print success message
+      - name: Workflow summary
+        run: echo "🎉 Build & SonarQube Analysis Completed Successfully!"
